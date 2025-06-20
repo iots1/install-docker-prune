@@ -1,34 +1,36 @@
 #!/bin/bash
 
 # ==============================================================================
-#  สคริปต์สำหรับติดตั้งและตั้งค่าระบบ Docker Prune อัตโนมัติแบบ Aggressive
+#  Installer script for the Aggressive Automatic Docker Prune system
 # ==============================================================================
 #
-#  สคริปต์นี้จะทำการ:
-#  1. สร้างสคริปต์ docker_aggressive_prune.sh ใน /usr/local/bin/
-#  2. สร้าง Cron job ใน /etc/cron.d/ เพื่อรันสคริปต์ทุกวันตอน 08:30 น.
-#  3. สร้างไฟล์ตั้งค่า logrotate ใน /etc/logrotate.d/ เพื่อจัดการขนาดไฟล์ Log
+#  Version: Specifies Timezone directly in the Cron Job (CRON_TZ=Asia/Bangkok)
 #
-#  วิธีใช้:
-#  1. บันทึกสคริปต์นี้เป็นไฟล์ เช่น install_docker_prune.sh
-#  2. รันด้วยคำสั่ง: sudo bash install_docker_prune.sh
+#  This script will:
+#  1. Create the docker_aggressive_prune.sh script in /usr/local/bin/
+#  2. Create a Cron job that uses CRON_TZ=Asia/Bangkok to run at 08:30
+#  3. Create a logrotate configuration file in /etc/logrotate.d/
+#
+#  How to use:
+#  1. Save this script to a file, e.g., install_docker_prune.sh
+#  2. Run it with the command: sudo bash install_docker_prune.sh
 #
 # ==============================================================================
 
-# หยุดการทำงานทันทีหากมีคำสั่งใดล้มเหลว
+# Exit immediately if a command exits with a non-zero status.
 set -e
 
-# --- ตรวจสอบว่ารันด้วยสิทธิ์ root หรือไม่ ---
+# --- Check if running as root ---
 if [ "$(id -u)" -ne 0 ]; then
-  echo "❌ กรุณารันสคริปต์นี้ด้วยสิทธิ์ root หรือใช้ sudo" >&2
+  echo "❌ This script must be run as root or with sudo." >&2
   exit 1
 fi
 
-echo "🚀 เริ่มต้นการติดตั้งระบบ Docker Prune อัตโนมัติ..."
+echo "🚀 Starting the Docker Prune system installation (with specified Timezone)..."
 echo "----------------------------------------------------"
 
-# --- ขั้นตอนที่ 1: สร้างสคริปต์ Prune ---
-echo ">>> 1. กำลังสร้างสคริปต์ prune ใน /usr/local/bin/docker_aggressive_prune.sh..."
+# --- Step 1: Create the Prune Script ---
+echo ">>> 1. Creating the prune script..."
 
 cat > /usr/local/bin/docker_aggressive_prune.sh << 'EOF'
 #!/bin/bash
@@ -39,26 +41,28 @@ echo ""
 EOF
 
 chmod +x /usr/local/bin/docker_aggressive_prune.sh
-echo "✅ สร้างสคริปต์ Prune สำเร็จ"
+echo "✅ Prune script created successfully."
 echo ""
 
-# --- ขั้นตอนที่ 2: สร้าง Cron Job ---
-# การสร้างไฟล์ใน /etc/cron.d/ เป็นวิธีที่แนะนำสำหรับ system-wide cron jobs
-echo ">>> 2. กำลังสร้าง Cron job ใน /etc/cron.d/docker-prune..."
+# --- Step 2: Create the Cron Job ---
+echo ">>> 2. Creating Cron job with Timezone set to Asia/Bangkok..."
 
 cat > /etc/cron.d/docker-prune << 'EOF'
-# รันสคริปต์ล้าง Docker แบบ aggressive ทุกวัน เวลา 08:30 น.
+# Set the timezone specifically for this cron job.
+CRON_TZ=Asia/Bangkok
+
+# Run the aggressive Docker prune script every day at 08:30 (Asia/Bangkok time).
 30 8 * * * root /usr/local/bin/docker_aggressive_prune.sh >> /var/log/docker-prune.log 2>&1
 EOF
 
-# ตั้งค่า permission ที่ถูกต้องสำหรับ cron file
+# Set the correct permissions for the cron file
 chmod 0644 /etc/cron.d/docker-prune
 
-echo "✅ สร้าง Cron job สำเร็จ"
+echo "✅ Cron job created successfully."
 echo ""
 
-# --- ขั้นตอนที่ 3: ตั้งค่า Logrotate ---
-echo ">>> 3. กำลังตั้งค่า Logrotate ใน /etc/logrotate.d/docker-prune..."
+# --- Step 3: Set up Logrotate ---
+echo ">>> 3. Setting up Logrotate..."
 
 cat > /etc/logrotate.d/docker-prune << 'EOF'
 /var/log/docker-prune.log {
@@ -72,10 +76,10 @@ cat > /etc/logrotate.d/docker-prune << 'EOF'
 }
 EOF
 
-echo "✅ ตั้งค่า Logrotate สำเร็จ"
+echo "✅ Logrotate setup complete."
 echo ""
 
-# --- สิ้นสุดการทำงาน ---
+# --- End of script ---
 echo "----------------------------------------------------"
-echo "🎉 การติดตั้งทั้งหมดเสร็จสมบูรณ์!"
-echo "เซิร์ฟเวอร์ของคุณจะทำการล้าง Docker อัตโนมัติทุกวันตอน 08:30 น."
+echo "🎉 Installation complete!"
+echo "Your server will now perform an automatic Docker prune at 08:30 (Thai time), regardless of the system's timezone."
